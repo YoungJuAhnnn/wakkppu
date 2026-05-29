@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>왁뿌볼 부수기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: #F5B89A;
+  min-height: 100vh;
+  color: #3a2218;
+}
+
+#select-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 60px;
+}
+
+.header { text-align: center; margin-bottom: 28px; }
+.header h1 { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.5px; color: #2e1a10; }
+.header p { font-size: 0.82rem; font-weight: 300; color: rgba(60,30,15,0.55); margin-top: 5px; letter-spacing: 0.5px; }
+
+.stats-row { display: flex; gap: 12px; margin-bottom: 32px; }
+.stat-item { background: rgba(255,255,255,0.3); border-radius: 12px; padding: 10px 20px; text-align: center; min-width: 90px; }
+.stat-num { display: block; font-size: 1.4rem; font-weight: 600; color: #2e1a10; line-height: 1; }
+.stat-label { display: block; font-size: 0.68rem; font-weight: 300; color: rgba(60,30,15,0.55); margin-top: 3px; }
+
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; max-width: 480px; width: 100%; }
+
+.ball-card { background: rgba(255,255,255,0.35); border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.ball-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(80,30,10,0.15); }
+.ball-card:active { transform: scale(0.97); }
+
+.card-thumb { width: 120%; aspect-ratio: 3.5 / 2; overflow: hidden; position: relative; background: rgba(255,255,255,0.1); }
+.card-thumb img { position: absolute; width: 300%; height: auto; top: 0; left: 0; pointer-events: none; display: block; }
+
+.card-info { padding: 10px 13px 12px; }
+.card-name { font-size: 0.92rem; font-weight: 500; color: #2e1a10; }
+.card-sub { font-size: 0.72rem; font-weight: 300; color: rgba(60,30,15,0.5); margin-top: 1px; }
+
+#settings-screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; padding: 48px 24px 60px; }
+#settings-screen.active { display: flex; }
+
+.settings-container { max-width: 420px; width: 100%; }
+.settings-header { text-align: center; margin-bottom: 40px; }
+.settings-header h2 { font-size: 1.4rem; font-weight: 600; color: #2e1a10; margin-bottom: 8px; }
+.settings-header p { font-size: 0.8rem; font-weight: 300; color: rgba(60,30,15,0.55); }
+
+.setting-item { background: rgba(255,255,255,0.3); border-radius: 16px; padding: 20px 24px; margin-bottom: 16px; }
+.setting-label { font-size: 0.88rem; font-weight: 500; color: #2e1a10; margin-bottom: 12px; display: block; }
+.setting-value { font-size: 1.6rem; font-weight: 600; color: #2e1a10; text-align: center; margin-bottom: 16px; }
+
+.slider-container { position: relative; height: 6px; background: rgba(255,255,255,0.4); border-radius: 3px; cursor: pointer; }
+.slider-fill { position: absolute; height: 100%; background: linear-gradient(90deg, #ff8fab, #2e1a10); border-radius: 3px; transition: width 0.1s; pointer-events: none; }
+.slider-thumb { position: absolute; width: 20px; height: 20px; background: #2e1a10; border: 3px solid rgba(255,255,255,0.9); border-radius: 50%; top: 50%; transform: translate(-50%, -50%); cursor: grab; transition: left 0.1s; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.slider-thumb:active { cursor: grabbing; }
+
+.btn-group { display: flex; gap: 10px; margin-top: 32px; }
+.btn { flex: 1; padding: 14px 24px; border-radius: 50px; border: none; font-family: 'Noto Sans KR', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: transform 0.12s; letter-spacing: -0.2px; }
+.btn:hover { transform: scale(1.04); }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: #2e1a10; color: #fff; }
+.btn.secondary { background: rgba(255,255,255,0.4); color: #2e1a10; border: 1px solid rgba(60,30,15,0.2); }
+
+#game-screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; background: #F5B89A; }
+#game-screen.active { display: flex; }
+
+.game-nav { width: 100%; max-width: 560px; display: flex; align-items: center; padding: 22px 20px 0; }
+.btn-back { background: rgba(255,255,255,0.35); border: none; border-radius: 50%; width: 38px; height: 38px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #3a2218; transition: background 0.15s; flex-shrink: 0; }
+.btn-back:hover { background: rgba(255,255,255,0.55); }
+.game-nav-title { flex: 1; text-align: center; font-size: 1rem; font-weight: 500; color: #2e1a10; }
+
+.stage-bar { display: flex; gap: 6px; margin: 18px 0 14px; }
+.stage-pip { width: 30px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.38); transition: background 0.3s; }
+.stage-pip.filled { background: rgba(60,25,10,0.4); }
+
+.tap-counter { font-size: 1.1rem; font-weight: 500; color: rgba(60,30,15,0.7); margin-bottom: 12px; min-height: 24px; text-align: center; }
+
+.ball-viewer { position: relative; width: min(480px, calc(100vw - 48px)); aspect-ratio: 3 / 2; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; overflow: hidden; border-radius: 18px; transition: transform 0.05s ease; }
+.ball-img { position: absolute; width: 215%; height: auto; top: -2%; left: -4%; pointer-events: none; transition: opacity 0.07s; }
+
+.hint-text { margin-top: 18px; font-size: 0.85rem; font-weight: 300; color: rgba(60,30,15,0.6); letter-spacing: 0.2px; min-height: 22px; text-align: center; }
+
+@keyframes bubble {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.bubble { position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent); pointer-events: none; animation: bubble 0.4s ease-out forwards; transform: translate(-50%, -50%); }
+
+.particle-layer { position: fixed; inset: 0; pointer-events: none; z-index: 500; overflow: hidden; }
+.p { position: absolute; border-radius: 2px; animation: pfly 0.6s ease-out forwards; }
+@keyframes pfly {
+  0% { opacity: 0.9; transform: translate(0,0) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx),var(--dy)) rotate(var(--r)); }
+}
+
+#done-overlay { display: none; position: fixed; inset: 0; z-index: 600; background: rgba(245,184,154,0.94); backdrop-filter: blur(6px); flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; }
+#done-overlay.active { display: flex; }
+.done-title { font-size: 1.45rem; font-weight: 600; color: #2e1a10; letter-spacing: -0.5px; }
+.done-sub { font-size: 0.88rem; font-weight: 300; color: rgba(60,30,15,0.6); margin-bottom: 24px; }
+.done-btns { display: flex; gap: 10px; }
+.btn-done { padding: 11px 24px; border-radius: 50px; border: none; font-family: 'Noto Sans KR', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: transform 0.12s; letter-spacing: -0.2px; }
+.btn-done:hover { transform: scale(1.04); }
+.btn-done:active { transform: scale(0.97); }
+.btn-done.primary { background: #2e1a10; color: #fff; }
+.btn-done.secondary { background: rgba(255,255,255,0.4); color: #2e1a10; border: 1px solid rgba(60,30,15,0.2); }
+
+body {
+  background:
+    radial-gradient(circle at 20% 8%, rgba(255,255,255,0.30), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(255,220,205,0.36), transparent 26%),
+    #F5B89A;
+}
+.eyebrow { display: inline-block; font-size: 0.68rem; font-weight: 600; letter-spacing: 1.8px; color: rgba(60,30,15,0.55); background: rgba(255,255,255,0.28); border: 1px solid rgba(255,255,255,0.28); border-radius: 999px; padding: 7px 12px; margin-bottom: 12px; }
+.header h1 { font-size: 1.95rem; font-weight: 700; }
+.header p { font-size: 0.88rem; color: rgba(60,30,15,0.62); }
+.hero-box{ margin-top:18px; background: rgba(255,255,255,0.28); border: 1px solid rgba(255,255,255,0.38); backdrop-filter: blur(10px); border-radius: 20px; padding: 16px 22px; min-width: 260px; box-shadow: 0 10px 25px rgba(80,30,10,0.08), inset 0 1px 0 rgba(255,255,255,0.28); }
+.hero-title{ font-size:0.72rem; letter-spacing:1.5px; font-weight:700; color:#8a5a45; }
+.hero-sub{ margin-top:4px; font-size:0.86rem; color:#2e1a10; }
+.ball-card { background: rgba(255,255,255,0.32); border: 1px solid rgba(255,255,255,0.26); backdrop-filter: blur(12px); box-shadow: 0 10px 25px rgba(80,30,10,0.08); }
+.ball-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 16px 35px rgba(80,30,10,0.14); }
+.card-thumb img { width: 185%; top: -5%; left: -4%; transition: transform 0.3s ease; }
+.ball-card:hover .card-thumb img { transform: scale(1.035); }
+.card-name::after { content: ' 눌러보기'; float: right; font-size: 0.66rem; font-weight: 400; color: rgba(60,30,15,0.45); background: rgba(255,255,255,0.32); padding: 3px 7px; border-radius: 999px; }
+.ball-viewer { background: rgba(255,255,255,0.12); box-shadow: 0 20px 40px rgba(80,30,10,0.12), inset 0 1px 0 rgba(255,255,255,0.25); }
+.progress-text{ margin: -4px 0 14px; font-size:0.78rem; color:rgba(60,30,15,0.55); min-height: 18px; }
+.done-title { font-size: 1.65rem; }
+.select-settings-btn { position: fixed; top: 18px; right: 18px; z-index: 100; width: 42px; height: 42px; border: none; border-radius: 50%; background: rgba(255,255,255,0.35); color: #3a2218; font-size: 1.1rem; cursor: pointer; backdrop-filter: blur(10px); box-shadow: 0 8px 20px rgba(80,30,10,0.1); transition: transform 0.12s, background 0.12s; }
+.select-settings-btn:hover { transform: scale(1.06); background: rgba(255,255,255,0.55); }
+.select-settings-btn:active { transform: scale(0.95); }
+
+@media (max-width: 420px) {
+  #select-screen { padding: 34px 16px 46px; }
+  .grid { gap: 12px; }
+  .header h1 { font-size: 1.72rem; }
+  .stats-row { width: 100%; justify-content: center; }
+  .stat-item { min-width: 0; flex: 1; max-width: 140px; }
+  .card-info { padding: 9px 10px 11px; }
+  .card-name { font-size: 0.84rem; }
+  .card-name::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="particle-layer" id="particles"></div>
+
+<div id="select-screen">
+  <button class="select-settings-btn" onclick="openSettingsFromSelect()">⚙️</button>
+  <div class="header">
+    <h1>왁뿌볼 부수기</h1>
+    <p>귀엽고 말랑한 왁뿌볼을 제한없이 부숴보세요 ✨</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="stat-num" id="totalCount">0</span>
+      <span class="stat-label">총 부순 개수</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" id="todayCount">0</span>
+      <span class="stat-label">오늘 부순 개수</span>
+    </div>
+  </div>
+  <div class="grid" id="ballGrid"></div>
+</div>
+
+<div id="settings-screen">
+  <div class="settings-container">
+    <div class="settings-header">
+      <h2>⚙️ 설정</h2>
+      <p>탭 횟수를 조절하세요</p>
+    </div>
+    <div class="setting-item">
+      <label class="setting-label">단계별 탭 횟수</label>
+      <div class="setting-value" id="tapValue">100</div>
+      <div class="slider-container" id="tapSlider">
+        <div class="slider-fill" id="tapFill"></div>
+        <div class="slider-thumb" id="tapThumb"></div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn secondary" onclick="goBackToSelect()">뒤로</button>
+      <button class="btn primary" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div id="game-screen">
+  <div class="game-nav">
+    <button class="btn-back" onclick="goBack()">←</button>
+    <div class="game-nav-title" id="gameTitle">왁뿌볼</div>
+    <button class="btn-back" onclick="openSettings()" style="font-size:1.1rem;">⚙️</button>
+  </div>
+  <div class="stage-bar" id="stageBar">
+    <div class="stage-pip"></div>
+    <div class="stage-pip"></div>
+    <div class="stage-pip"></div>
+    <div class="stage-pip"></div>
+  </div>
+  <div class="tap-counter" id="tapCounter"></div>
+  <div class="progress-text" id="progressText">Stage 1 / 4 · 0%</div>
+  <div class="ball-viewer" id="ballViewer">
+    <img class="ball-img" id="ballImg" src="" alt="왁뿌볼" draggable="false">
+  </div>
+  <div class="hint-text" id="hintText">탭해서 부수세요</div>
+</div>
+
+<div id="done-overlay">
+  <div class="done-title">완전히 부셨어요 ✨</div>
+  <div class="done-sub" id="doneSub">오드득</div>
+  <div class="done-sub" id="doneStats"></div>
+  <div class="done-btns">
+    <button class="btn-done primary" onclick="resetBall()">다시 부수기</button>
+    <button class="btn-done secondary" onclick="goBack()">다른 거 선택</button>
+  </div>
+</div>
+
+<script>
+const SOUND_FILES = ['sound1.mp3', 'sound2.mp3', 'sound3.mp3', 'sound4.mp3'];
+let soundUnlocked = false;
+let audioPool = [];
+let settingsFrom = 'game';
+
+function preloadAudio() {
+  SOUND_FILES.forEach((file, idx) => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = file;
+    audio.load();
+    audioPool[idx] = audio;
+  });
+}
+
+function unlockSounds() {
+  if (soundUnlocked) return;
+  audioPool.forEach((audio) => {
+    audio.volume = 0;
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+      }).catch(() => {});
+    }
+  });
+  soundUnlocked = true;
+  document.removeEventListener('click', unlockSounds);
+  document.removeEventListener('touchstart', unlockSounds);
+}
+
+function playSound(stageIndex) {
+  if (stageIndex < 0 || stageIndex >= SOUND_FILES.length) return;
+  const audio = new Audio();
+  audio.src = SOUND_FILES[stageIndex];
+  audio.volume = 1.0;
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(err => {
+      console.warn('Sound play failed:', err);
+      if (audioPool[stageIndex]) {
+        audioPool[stageIndex].currentTime = 0;
+        audioPool[stageIndex].play().catch(() => {});
+      }
+    });
+  }
+}
+
+/* ── ASMR 연타 루프 엔진 ── */
+let asmrCtx = null;
+let asmrGain = null;
+let asmrSource = null;
+let asmrEl = null;
+let asmrStarted = false;
+let asmrTicking = false;
+
+let tapIntensity = 0;
+const INTENSITY_PER_TAP = 0.22;
+const INTENSITY_DECAY   = 0.04;
+const MAX_GAIN = 1.0;
+const MIN_GAIN = 0.0;
+
+function initAsmr() {
+  if (asmrCtx) return;
+  try {
+    asmrEl = new Audio('asmr.mp3');
+    asmrEl.loop = true;
+    asmrEl.preload = 'auto';
+    asmrCtx = new (window.AudioContext || window.webkitAudioContext)();
+    asmrSource = asmrCtx.createMediaElementSource(asmrEl);
+    asmrGain = asmrCtx.createGain();
+    asmrGain.gain.value = 0;
+    asmrSource.connect(asmrGain);
+    asmrGain.connect(asmrCtx.destination);
+  } catch (e) {
+    console.warn('ASMR init failed:', e);
+  }
+}
+
+function startAsmrLoop() {
+  if (!asmrCtx) initAsmr();
+  if (!asmrCtx) return;
+  if (asmrCtx.state === 'suspended') asmrCtx.resume();
+  if (!asmrStarted) {
+    asmrEl.play().then(() => { asmrStarted = true; }).catch(() => {});
+    asmrStarted = true;
+  }
+  if (!asmrTicking) {
+    asmrTicking = true;
+    requestAnimationFrame(asmrTick);
+  }
+}
+
+function bumpAsmr() {
+  tapIntensity = Math.min(1, tapIntensity + INTENSITY_PER_TAP);
+}
+
+function asmrTick() {
+  tapIntensity = Math.max(0, tapIntensity - INTENSITY_DECAY);
+  if (asmrGain) {
+    const target = MIN_GAIN + (MAX_GAIN - MIN_GAIN) * tapIntensity;
+    const cur = asmrGain.gain.value;
+    asmrGain.gain.value = cur + (target - cur) * 0.25;
+  }
+  if (asmrStarted) {
+    requestAnimationFrame(asmrTick);
+  } else {
+    asmrTicking = false;
+  }
+}
+
+function stopAsmrLoop() {
+  tapIntensity = 0;
+  if (asmrGain) asmrGain.gain.value = 0;
+  if (asmrEl) { asmrEl.pause(); asmrEl.currentTime = 0; }
+  asmrStarted = false;
+}
+
+document.addEventListener('click', unlockSounds);
+document.addEventListener('touchstart', unlockSounds);
+preloadAudio();
+
+const BALLS = [
+  { id:'cat',       name:'고양이 발바닥', sub:'말랑 발바닥', img:'고양이 발바닥.png', colors:['#ffb3c6','#ff8fab','#ffd6e6'] },
+  { id:'hallabong', name:'한라봉', sub:'제주 한라봉', img:'한라봉.png', colors:['#ffb347','#ff9800','#ffd082'] },
+  { id:'apple',     name:'청사과', sub:'영롱한 사과', img:'청사과.png', colors:['#b5e55a','#8bc34a','#d4f0a0'] },
+  { id:'kitty',     name:'헬로키티', sub:'깜찍한 키티', img:'헬로키티.png', colors:['#ffd6e0','#ffb3c6','#fff0f4'] },
+];
+
+const OFFSETS = [ [0, 0], [-50, 0], [0, -50], [-50, -50] ];
+
+let current = null;
+let stage = 0;
+let tapCount = 0;
+let tapRequired = 100;
+let stats = { total:0, today:0 };
+
+function loadStats() {
+  try {
+    const s = JSON.parse(localStorage.getItem('waxppu3') || '{}');
+    stats.total = s.total || 0;
+    stats.today = s.lastDate === new Date().toDateString() ? (s.today || 0) : 0;
+  } catch(e) {}
+}
+function saveStats() {
+  try {
+    localStorage.setItem('waxppu3', JSON.stringify({ ...stats, lastDate: new Date().toDateString() }));
+  } catch(e) {}
+}
+function updateStatsUI() {
+  document.getElementById('totalCount').textContent = stats.total;
+  document.getElementById('todayCount').textContent = stats.today;
+}
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem('waxppu_settings');
+    if (saved) {
+      const settings = JSON.parse(saved);
+      tapRequired = settings.tapRequired || 100;
+    }
+  } catch(e) {}
+}
+function saveSettingsToStorage() {
+  try {
+    localStorage.setItem('waxppu_settings', JSON.stringify({ tapRequired }));
+  } catch(e) {}
+}
+
+function renderGrid() {
+  const g = document.getElementById('ballGrid');
+  g.innerHTML = '';
+  BALLS.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'ball-card';
+    card.innerHTML = `
+      <div class="card-thumb">
+        <img src="${b.img}" alt="${b.name}">
+      </div>
+      <div class="card-info">
+        <div class="card-name">${b.name}</div>
+        <div class="card-sub">${b.sub}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => startGame(b));
+    g.appendChild(card);
+  });
+}
+
+function startGame(ball) {
+  current = ball;
+  stage = 0;
+  tapCount = 0;
+  document.getElementById('gameTitle').textContent = ball.name;
+  const img = document.getElementById('ballImg');
+  img.src = ball.img;
+  img.style.opacity = '1';
+  applyStage(0);
+  updatePips(0);
+  updateTapCounter();
+  document.getElementById('hintText').textContent = '탭해서 부수세요';
+  document.getElementById('select-screen').style.display = 'none';
+  document.getElementById('settings-screen').classList.remove('active');
+  document.getElementById('game-screen').classList.add('active');
+  document.getElementById('done-overlay').classList.remove('active');
+  unlockSounds();
+  attachTap();
+}
+
+function goBack() {
+  detachTap();
+  stopAsmrLoop();
+  document.getElementById('game-screen').classList.remove('active');
+  document.getElementById('settings-screen').classList.remove('active');
+  document.getElementById('done-overlay').classList.remove('active');
+  document.getElementById('select-screen').style.display = '';
+}
+
+function resetBall() {
+  document.getElementById('done-overlay').classList.remove('active');
+  startGame(current);
+}
+
+function applyStage(s) {
+  const img = document.getElementById('ballImg');
+  const [tx, ty] = OFFSETS[Math.min(s, 3)];
+  img.style.transform = `translate(${tx}%, ${ty}%)`;
+}
+
+function updatePips(s) {
+  document.querySelectorAll('.stage-pip').forEach((p, i) => {
+    p.classList.toggle('filled', i < s);
+  });
+}
+
+function updateTapCounter() {
+  const remaining = tapRequired - tapCount;
+  document.getElementById('tapCounter').textContent = remaining > 0 ? `${remaining}번 남음` : '';
+  const progress = Math.min(100, Math.round((stage / 4) * 100));
+  const progressEl = document.getElementById('progressText');
+  if (progressEl) {
+    progressEl.textContent = `Stage ${Math.min(stage + 1, 4)} / 4 · ${progress}%`;
+  }
+}
+
+let _onTap;
+function attachTap() {
+  detachTap();
+  const viewer = document.getElementById('ballViewer');
+  _onTap = (e) => {
+    e.preventDefault();
+    unlockSounds();
+    startAsmrLoop();
+    bumpAsmr();
+    if (stage >= 4) return;
+    tapCount++;
+    updateTapCounter();
+    createBubble(e);
+    viewer.style.transform = 'scale(0.98)';
+    setTimeout(() => { viewer.style.transform = ''; }, 80);
+    if (tapCount >= tapRequired) {
+      crack();
+      tapCount = 0;
+      updateTapCounter();
+    }
+  };
+  viewer.addEventListener('click', _onTap);
+  viewer.addEventListener('touchstart', _onTap, { passive: false });
+}
+
+function detachTap() {
+  const v = document.getElementById('ballViewer');
+  if (v && _onTap) {
+    v.removeEventListener('click', _onTap);
+    v.removeEventListener('touchstart', _onTap);
+  }
+  _onTap = null;
+}
+
+function createBubble(e) {
+  const viewer = document.getElementById('ballViewer');
+  const rect = viewer.getBoundingClientRect();
+  let x, y;
+  if (e.touches && e.touches[0]) {
+    x = e.touches[0].clientX - rect.left;
+    y = e.touches[0].clientY - rect.top;
+  } else {
+    x = e.clientX - rect.left;
+    y = e.clientY - rect.top;
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.style.left = x + 'px';
+  bubble.style.top = y + 'px';
+  viewer.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 400);
+}
+
+function crack() {
+  playSound(stage);
+  spawnParticles(current.colors);
+  stage++;
+  const img = document.getElementById('ballImg');
+  img.style.opacity = '0';
+  setTimeout(() => {
+    applyStage(Math.min(stage, 3));
+    img.style.opacity = '1';
+  }, 70);
+  updatePips(stage);
+  const hints = ['탭해서 부수세요','조금 더 눌러보세요','거의 다 됐어요','마지막이에요'];
+  document.getElementById('hintText').textContent = stage < 4 ? hints[stage] : '';
+  if (stage >= 4) {
+    setTimeout(showDone, 380);
+  }
+}
+
+function spawnParticles(colors) {
+  const c = document.getElementById('particles');
+  const r = document.getElementById('ballViewer').getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'p';
+    const sz = 3 + Math.random() * 7;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 110;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    el.style.cssText = `
+      left:${cx}px; top:${cy}px;
+      width:${sz}px; height:${sz * (0.4 + Math.random() * 0.7)}px;
+      background:${color};
+      --dx:${Math.cos(angle) * dist}px;
+      --dy:${Math.sin(angle) * dist - 25}px;
+      --r:${(Math.random() - .5) * 400}deg;
+      animation-duration:${0.4 + Math.random() * 0.3}s;
+      border-radius:${Math.random() > .4 ? '50%' : '2px'};
+    `;
+    c.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  }
+}
+
+const MSGS = ['아!', '에!', '이!', '오!'];
+
+function showDone() {
+  stopAsmrLoop();
+  stats.total++;
+  stats.today++;
+  saveStats();
+  updateStatsUI();
+  document.getElementById('doneSub').textContent = MSGS[Math.floor(Math.random() * MSGS.length)];
+  const doneStats = document.getElementById('doneStats');
+  if (doneStats) {
+    doneStats.textContent = `지금까지 총 ${stats.total}개 부쉈어요`;
+  }
+  document.getElementById('done-overlay').classList.add('active');
+}
+
+function openSettings() {
+  settingsFrom = 'game';
+  document.getElementById('game-screen').classList.remove('active');
+  document.getElementById('select-screen').style.display = 'none';
+  document.getElementById('settings-screen').classList.add('active');
+  initSlider();
+}
+function openSettingsFromSelect() {
+  settingsFrom = 'select';
+  document.getElementById('select-screen').style.display = 'none';
+  document.getElementById('game-screen').classList.remove('active');
+  document.getElementById('settings-screen').classList.add('active');
+  initSlider();
+}
+function goBackToSelect() {
+  document.getElementById('settings-screen').classList.remove('active');
+  if (settingsFrom === 'select') {
+    document.getElementById('select-screen').style.display = '';
+    document.getElementById('game-screen').classList.remove('active');
+  } else {
+    document.getElementById('select-screen').style.display = 'none';
+    document.getElementById('game-screen').classList.add('active');
+  }
+}
+function saveSettings() {
+  saveSettingsToStorage();
+  document.getElementById('settings-screen').classList.remove('active');
+  if (settingsFrom === 'select') {
+    document.getElementById('select-screen').style.display = '';
+    document.getElementById('game-screen').classList.remove('active');
+  } else {
+    document.getElementById('select-screen').style.display = 'none';
+    document.getElementById('game-screen').classList.add('active');
+    updateTapCounter();
+  }
+}
+
+function initSlider() {
+  const slider = document.getElementById('tapSlider');
+  const thumb = document.getElementById('tapThumb');
+  const fill = document.getElementById('tapFill');
+  const value = document.getElementById('tapValue');
+  const min = 10;
+  const max = 1000;
+  function updateSlider(val) {
+    tapRequired = Math.max(min, Math.min(max, val));
+    const percent = ((tapRequired - min) / (max - min)) * 100;
+    thumb.style.left = percent + '%';
+    fill.style.width = percent + '%';
+    value.textContent = tapRequired;
+  }
+  updateSlider(tapRequired);
+  let isDragging = false;
+  function handleMove(clientX) {
+    const rect = slider.getBoundingClientRect();
+    let percent = ((clientX - rect.left) / rect.width) * 100;
+    percent = Math.max(0, Math.min(100, percent));
+    const val = Math.round(min + (percent / 100) * (max - min));
+    updateSlider(val);
+  }
+  const onMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    handleMove(clientX);
+  };
+  const onEnd = () => {
+    isDragging = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+  };
+  const onStart = (e) => {
+    isDragging = true;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    handleMove(clientX);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  };
+  slider.addEventListener('mousedown', onStart);
+  slider.addEventListener('touchstart', onStart, { passive: false });
+}
+
+loadStats();
+loadSettings();
+updateStatsUI();
+renderGrid();
+</script>
+</body>
+</html>
